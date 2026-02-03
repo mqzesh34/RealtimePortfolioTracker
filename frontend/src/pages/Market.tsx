@@ -2,13 +2,8 @@ import { useState, useEffect } from 'react';
 import socket from '../utils/socket';
 
 
-interface MarketItem {
-    code: string;
-    buy: string;
-    sell: string;
-    change?: number;
-    rawCode?: string;
-}
+import type { MarketItem } from '../types';
+import { useCurrency } from '../hooks/useCurrency';
 
 
 
@@ -23,6 +18,8 @@ const Market = () => {
         }
     });
     const [connectionStatus, setConnectionStatus] = useState<string>('Bağlanıyor...');
+
+    const { formatCurrency } = useCurrency();
 
     useEffect(() => {
         if (marketData.length > 0) {
@@ -122,12 +119,6 @@ const Market = () => {
                         marketData.map((item, index) => {
                             const buyPrice = Number(item.buy);
                             const sellPrice = Number(item.sell);
-                            const lowerCode = item.code.toLowerCase();
-                            const isDollar = lowerCode.includes('ons') || lowerCode.includes('/usd') || lowerCode.endsWith('usd');
-                            const isDollarRaw = item.rawCode?.includes('USD') && !item.rawCode?.includes('TRY');
-
-                            const symbol = (isDollar || isDollarRaw) ? '$' : '₺';
-
                             const change = item.change || 0;
 
                             const bgClass = change > 0
@@ -143,18 +134,12 @@ const Market = () => {
                                     </div>
                                     <div className="w-21 text-center">
                                         <span className="text-zinc-200 font-medium text-sm sm:text-sm tabular-nums tracking-wide">
-                                            {buyPrice.toLocaleString('tr-TR', {
-                                                minimumFractionDigits: (item.code === 'Gümüş Ons' || item.code === 'Gram Gümüş') ? 2 : 0,
-                                                maximumFractionDigits: (item.code === 'Gümüş Ons' || item.code === 'Gram Gümüş') ? 2 : 0
-                                            })}{symbol}
+                                            {formatCurrency(buyPrice, item.code, item.rawCode)}
                                         </span>
                                     </div>
                                     <div className="w-21 text-center">
                                         <span className="text-zinc-200 font-medium text-sm sm:text-sm tabular-nums tracking-wide">
-                                            {sellPrice.toLocaleString('tr-TR', {
-                                                minimumFractionDigits: (item.code === 'Gümüş Ons' || item.code === 'Gram Gümüş') ? 2 : 0,
-                                                maximumFractionDigits: (item.code === 'Gümüş Ons' || item.code === 'Gram Gümüş') ? 2 : 0
-                                            })}{symbol}
+                                            {formatCurrency(sellPrice, item.code, item.rawCode)}
                                         </span>
                                     </div>
                                     <div className={`${change >= 0 ? 'text-green-500' : 'text-red-500'} pl-2`}>

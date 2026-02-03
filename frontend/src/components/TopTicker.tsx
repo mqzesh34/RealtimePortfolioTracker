@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Coins } from 'lucide-react';
 import Marquee from 'react-fast-marquee';
 import socket from '../utils/socket';
+import { useCurrency } from '../hooks/useCurrency';
 
 interface TickerData {
     symbol: string;
@@ -52,70 +53,86 @@ const TopTicker = () => {
         return localStorage.getItem('marketTimeCache') || '';
     });
 
+    const tickersRef = React.useRef(tickers);
+    const lastUpdateRef = React.useRef(lastUpdate);
+
+    useEffect(() => {
+        tickersRef.current = tickers;
+    }, [tickers]);
+
+    useEffect(() => {
+        lastUpdateRef.current = lastUpdate;
+    }, [lastUpdate]);
+
     useEffect(() => {
         const handleConnect = () => {
             console.log('Üst bant piyasa verilerine bağlandı');
         };
 
         const handleConnectError = (err: any) => {
-            console.error('Üst bant soket hatası:', err);
+            console.error('Üst bant soket hatası (bağlantı henüz hazır olmayabilir):', err.message || err);
         };
 
         const handleMarketData = (response: any) => {
             const data = Array.isArray(response) ? response : response.tickers || [];
             const time = !Array.isArray(response) ? response.time : '';
 
-            if (time) setLastUpdate(time);
+            let hasChanges = false;
+            const currentTickers = [...tickersRef.current];
 
-            setTickers(prevTickers => {
-                const currentTickers = [...prevTickers];
+            data.forEach((item: any) => {
+                if (!ALLOWED_SYMBOLS.includes(item.symbol)) return;
 
-                data.forEach((item: any) => {
-                    if (!ALLOWED_SYMBOLS.includes(item.symbol)) return;
-
-                    const index = currentTickers.findIndex(t => t.symbol === item.symbol);
-                    const tickerItem: TickerData = {
-                        symbol: item.symbol,
-                        price: item.price,
-                        change: item.change,
-                        icon: getIconForSymbol(item.symbol)
-                    };
-
-                    if (index !== -1) {
-                        currentTickers[index] = tickerItem;
-                    } else {
-                        currentTickers.push(tickerItem);
+                const index = currentTickers.findIndex(t => t.symbol === item.symbol);
+                if (index !== -1) {
+                    if (currentTickers[index].price !== item.price || currentTickers[index].change !== item.change) {
+                        currentTickers[index] = {
+                            ...currentTickers[index],
+                            price: item.price,
+                            change: item.change
+                        };
+                        hasChanges = true;
                     }
-                });
-
-                return currentTickers;
+                } else {
+                }
             });
+
+            if (hasChanges) {
+                tickersRef.current = currentTickers;
+            }
+            if (time) {
+                lastUpdateRef.current = time;
+            }
         };
 
         socket.on('connect', handleConnect);
         socket.on('connect_error', handleConnectError);
         socket.on('market_data', handleMarketData);
 
-        return () => {
-            socket.off('connect', handleConnect);
-            socket.off('connect_error', handleConnectError);
-            socket.off('market_data', handleMarketData);
-        };
-    }, []);
+        const intervalId = setInterval(() => {
+            const refPrices = tickersRef.current.map(t => t.price).join(',');
+            const statePrices = tickers.map(t => t.price).join(',');
 
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            const cacheData = tickers.map(({ icon, ...rest }) => rest);
-            localStorage.setItem('marketTickerCache', JSON.stringify(cacheData));
-            if (lastUpdate) {
-                localStorage.setItem('marketTimeCache', lastUpdate);
+            if (refPrices !== statePrices || lastUpdateRef.current !== lastUpdate) {
+                setTickers([...tickersRef.current]);
+                setLastUpdate(lastUpdateRef.current);
+
+                const cacheData = tickersRef.current.map(({ icon, ...rest }) => rest);
+                localStorage.setItem('marketTickerCache', JSON.stringify(cacheData));
+                if (lastUpdateRef.current) {
+                    localStorage.setItem('marketTimeCache', lastUpdateRef.current);
+                }
             }
         }, 1000);
 
         return () => {
-            clearTimeout(handler);
+            socket.off('connect', handleConnect);
+            socket.off('connect_error', handleConnectError);
+            socket.off('market_data', handleMarketData);
+            clearInterval(intervalId);
         };
-    }, [tickers, lastUpdate]);
+    }, []);
+    const { formatCurrency } = useCurrency();
 
     const TickerItem = ({ ticker }: { ticker: TickerData }) => {
         return (
@@ -127,7 +144,7 @@ const TopTicker = () => {
                 </span>
 
                 <span className="text-yellow-400 font-semibold text-xs tabular-nums text-right w-[4.5rem]">
-                    {ticker.symbol.includes('ONS') ? '$' : '₺'}{ticker.price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatCurrency(ticker.price, ticker.symbol)}
                 </span>
 
                 <div className={`flex items-center justify-end w-[3.5rem] gap-0.5 ${ticker.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>

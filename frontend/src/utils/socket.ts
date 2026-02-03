@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 export const socket: Socket = io({
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
     reconnectionAttempts: 10,
     reconnectionDelay: 1000,
     autoConnect: true,

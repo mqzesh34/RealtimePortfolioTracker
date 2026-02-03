@@ -1,3 +1,6 @@
+from gevent import monkey
+monkey.patch_all()
+
 import threading
 import time
 from flask import Flask
@@ -5,7 +8,7 @@ from flask_socketio import SocketIO
 import socketio as h_socketio
 
 app = Flask(__name__)
-socket_server = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+socket_server = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 harem_client = h_socketio.Client()
 
@@ -122,7 +125,14 @@ def run_harem_client():
             print(f"Harem bağlantı hatası: {e}")
             time.sleep(5)
 
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
+
+import gevent
+
 if __name__ == '__main__':
-    t = threading.Thread(target=run_harem_client, daemon=True)
-    t.start()
-    socket_server.run(app, host='0.0.0.0', port=5001, allow_unsafe_werkzeug=True)
+    print("Starting dedicated gevent WSGI server on port 5001...")
+    gevent.spawn(run_harem_client)
+    
+    server = pywsgi.WSGIServer(('0.0.0.0', 5001), app, handler_class=WebSocketHandler)
+    server.serve_forever()
