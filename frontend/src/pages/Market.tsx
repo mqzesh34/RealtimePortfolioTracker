@@ -109,7 +109,7 @@ const Market = () => {
                 <div className="text-center">Değişim</div>
             </div>
 
-            <div className="flex-1 overflow-y-auto scrollbar-hide pb-40 px-1 pt-2">
+            <div id="tutorial-market-grid" className="flex-1 overflow-y-auto scrollbar-hide pb-40 px-1 pt-2">
                 <div className="space-y-3">
                     {marketData.length === 0 ? (
                         <div className="text-center text-zinc-500 py-10">

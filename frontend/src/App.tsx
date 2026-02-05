@@ -4,6 +4,8 @@ import BottomNavbar from './components/BottomNavbar'
 import Dashboard from './pages/Dashboard'
 import Market from './pages/Market'
 import Portfolio from './pages/Portfolio'
+import { TutorialProvider } from './context/TutorialContext'
+import TutorialOverlay from './components/TutorialOverlay'
 import './index.css'
 
 function App() {
@@ -24,17 +26,20 @@ function App() {
   }, []);
 
   return (
-    <div className='bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-black shadow-2xl backdrop-blur-2xl h-screen w-full overflow-x-hidden'>
-      <TopTicker />
+    <TutorialProvider>
+      <div className='bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-black shadow-2xl backdrop-blur-2xl h-screen w-full overflow-x-hidden'>
+        <TopTicker />
 
-      <main className="h-screen">
-        {activePage === 'dashboard' && <Dashboard />}
-        {activePage === 'market' && <Market />}
-        {activePage === 'portfolio' && <Portfolio />}
-      </main>
+        <main className="h-screen">
+          {activePage === 'dashboard' && <Dashboard />}
+          {activePage === 'market' && <Market />}
+          {activePage === 'portfolio' && <Portfolio />}
+        </main>
 
-      <BottomNavbar activePage={activePage} onPageChange={setActivePage} />
-    </div>
+        <TutorialOverlay activePage={activePage} onPageChange={setActivePage} />
+        <BottomNavbar activePage={activePage} onPageChange={setActivePage} />
+      </div>
+    </TutorialProvider>
   )
 }
 

@@ -14,7 +14,7 @@ const Dashboard = () => {
 
     return (
         <div className="px-4 pt-20 max-w-4xl mx-auto h-full flex flex-col pb-24 overflow-y-auto scrollbar-hide">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 mb-8 backdrop-blur-sm">
+            <div id="tutorial-total-balance" className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 mb-8 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                         <Wallet className="w-6 h-6 text-yellow-500" />
@@ -38,7 +38,7 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div id="tutorial-portfolio-list" className="space-y-3">
                 <h3 className="text-zinc-100 font-medium px-2">Varlıklarım</h3>
                 {portfolioList.length === 0 ? (
                     <div className="text-center text-zinc-500 py-10 bg-zinc-900/30 rounded-3xl border border-zinc-800/50">

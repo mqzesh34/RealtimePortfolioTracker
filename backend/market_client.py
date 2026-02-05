@@ -7,8 +7,12 @@ from flask import Flask
 from flask_socketio import SocketIO
 import socketio as h_socketio
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../frontend/dist', static_url_path='')
 socket_server = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
 
 harem_client = h_socketio.Client()
 

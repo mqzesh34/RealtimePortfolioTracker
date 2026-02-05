@@ -4,8 +4,17 @@ import socket from '../utils/socket';
 import type { MarketItem, PortfolioItem } from '../types';
 import DistributionChart from '../components/DistributionChart';
 import AssetForm from '../components/AssetForm';
+import { useTutorial } from '../context/TutorialContext';
+
+const DEMO_PORTFOLIO: PortfolioItem[] = [
+    { code: 'Gram Altın', amount: 15 },
+    { code: 'Gram Gümüş', amount: 100 },
+    { code: 'Has Altın', amount: 5 },
+];
 
 const Portfolio = () => {
+    const { showDemoData } = useTutorial();
+
     const [marketData, setMarketData] = useState<MarketItem[]>(() => {
         try {
             const cached = localStorage.getItem('marketDataCache');
@@ -91,14 +100,18 @@ const Portfolio = () => {
         };
     }, []);
 
+    const effectivePortfolio = useMemo(() => {
+        return showDemoData ? DEMO_PORTFOLIO : portfolio;
+    }, [portfolio, showDemoData]);
+
     const { chartData } = useMemo(() => {
         let total = 0;
         const cData: any[] = [];
 
-        portfolio.forEach(item => {
+        effectivePortfolio.forEach(item => {
             const marketItem = marketData.find(m => m.code === item.code);
             if (marketItem) {
-                const price = Number(marketItem.sell);
+                const price = Number(marketItem.buy);
                 const value = price * item.amount;
                 total += value;
 
@@ -111,7 +124,7 @@ const Portfolio = () => {
 
         const filteredChartData = cData.filter(d => d.value > 0);
         return { chartData: filteredChartData };
-    }, [portfolio, marketData]);
+    }, [effectivePortfolio, marketData]);
 
     const handleAddAsset = useCallback((code: string, amount: number) => {
         setPortfolio(prev => {
@@ -143,9 +156,11 @@ const Portfolio = () => {
         <div className="px-4 pt-20 max-w-4xl mx-auto h-full flex flex-col pb-24 overflow-y-auto scrollbar-hide">
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <DistributionChart data={chartData} />
+                <div id="tutorial-distribution-chart">
+                    <DistributionChart data={chartData} />
+                </div>
 
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col">
+                <div id="tutorial-asset-form" className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col">
                     <div className="flex items-center gap-2 mb-6 bg-zinc-950/50 p-1 rounded-xl">
                         <button
                             onClick={() => setActiveTab('add')}

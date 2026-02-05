@@ -1,8 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import socket from '../utils/socket';
 import type { MarketItem, PortfolioItem } from '../types';
+import { useTutorial } from '../context/TutorialContext';
 
 export const usePortfolio = () => {
+
+    let showDemoData = false;
+    try {
+        const { showDemoData: demoData } = useTutorial();
+        showDemoData = demoData;
+    } catch (e) {
+    }
+
     const [marketData, setMarketData] = useState<MarketItem[]>(() => {
         try {
             const cached = localStorage.getItem('marketDataCache');
@@ -55,16 +64,27 @@ export const usePortfolio = () => {
         };
     }, []);
 
+    const effectivePortfolio = useMemo(() => {
+        if (showDemoData) {
+            return [
+                { code: 'Gram Altın', amount: 15 },
+                { code: 'Gram Gümüş', amount: 100 },
+                { code: 'Has Altın', amount: 5 }
+            ] as PortfolioItem[];
+        }
+        return portfolio;
+    }, [portfolio, showDemoData]);
+
     const { totalValue, totalChangePercentage, chartData, portfolioList } = useMemo(() => {
         let total = 0;
         let totalPrevious = 0;
         const cData: { name: string; value: number }[] = [];
         const pList: (PortfolioItem & { currentPrice: number; totalValue: number; change: number })[] = [];
 
-        portfolio.forEach(item => {
+        effectivePortfolio.forEach(item => {
             const marketItem = marketData.find(m => m.code === item.code);
             if (marketItem) {
-                const price = Number(marketItem.sell);
+                const price = Number(marketItem.buy);
                 const value = price * item.amount;
                 total += value;
 
@@ -100,7 +120,7 @@ export const usePortfolio = () => {
         const filteredChartData = cData.filter(d => d.value > 0);
 
         return { totalValue: total, totalChangePercentage: totalChangePercent, chartData: filteredChartData, portfolioList: pList };
-    }, [portfolio, marketData]);
+    }, [effectivePortfolio, marketData]);
 
     return {
         marketData,
